@@ -1,0 +1,57 @@
+# CiaoBank Management System
+
+**Team Name:** Boom Boom Ciao
+**Project Title:** CiaoBank Management System
+**Author:** Jai Badani & Team
+
+Project Description:
+This is a banking simulation project built using Python. It allows users to perform standard banking operations like creating accounts, depositing money, withdrawing cash, and transferring funds to other users.
+
+The project also includes an Admin panel to manage loans and a Support panel to handle user complaints. We have integrated a real database to store records and an email system to send OTPs and transaction alerts.
+
+Concepts & Libraries Used:
+
+**Concepts:**
+1) **Object-Oriented Programming (OOP):** The main logic is built using a Bank class.
+2) **Database Management:** We used SQL to store user data permanently.
+3) **Modular Programming:** The code is divided into different files for better organization.
+4) **Exception Handling:** Used to handle errors and keep the program running.
+
+**Libraries:**
+- `sqlite3`: For the database connection.
+- `smtplib`: For sending emails (OTPs and alerts).
+- `random`: To generate random account numbers and PINs.
+- `datetime`: To record the exact time of transactions.
+- `winsound`: For simple sound effects.
+
+Main Modules and Functions:
+
+**1. new_account()**
+This function registers a new user. It asks for personal details, verifies the email with an OTP, and generates a unique account number.
+**Input:** Name: Jai, Email: jai@test.com, Phone: 9876543210.
+**Output:** "Account Created. Your Account Number is 543210."
+
+**2. transfer()**
+This handles sending money from one user to another. It checks if the sender has enough balance and if the receiver exists.
+**Input:** Target Account: 123456, Amount: 500.
+**Output:** "Transfer Successful. Email sent to receiver."
+
+**3. admin_loans()**
+This function allows the Admin to view pending loan requests and approve or decline them.
+**Input:** Loan ID: 2, Action: Approve.
+**Output:** "Loan Approved. Amount credited to user."
+
+**4. helpdesk()**
+Allows users to raise a complaint ticket. The support team can later view this and reply.
+**Input:** Query: "My transaction failed."
+**Output:** "Ticket created. We will get back to you."
+
+Setup Instructions:
+
+1.  Download the project folder.
+2.  Open `config.py` and enter your sender email and password (needed for sending emails).
+3.  To run the project, open the terminal in the project folder and type:
+    ```
+    python run.py
+    ```
+4.  The database `bank.db` will be created automatically when you run it for the first time.
