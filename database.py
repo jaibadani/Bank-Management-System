@@ -10,12 +10,14 @@ def mk_db():
             balance REAL DEFAULT 0.0, acc_type TEXT NOT NULL
         )
     ''')
+
     c.execute('''
         CREATE TABLE IF NOT EXISTS transactions (
             id INTEGER PRIMARY KEY AUTOINCREMENT, account_number INTEGER, type TEXT,
             amount REAL, timestamp TEXT, FOREIGN KEY(account_number) REFERENCES accounts(account_number)
         )
     ''')
+
     c.execute('''
         CREATE TABLE IF NOT EXISTS beneficiaries (
             id INTEGER PRIMARY KEY AUTOINCREMENT, owner_acc INTEGER, name TEXT,

@@ -4,6 +4,7 @@ import sys
 from datetime import datetime
 import config
 from utils import nice_head, wait_a_bit, send_mail, play_cash
+import threading
 
 class Bank:
     def __init__(self):
@@ -77,6 +78,10 @@ class Bank:
     def new_account(self):
         nice_head("Open a New Account")
         name = input("Full name: ").strip()
+        if (name == ""):
+            print("Name cannot be empty.")
+            wait_a_bit()
+            return
         mail = input("Email: ").strip()
         phone = input("Phone (10 digits): ").strip()
         db = sqlite3.connect("bank.db")
@@ -109,6 +114,10 @@ class Bank:
     def recover(self):
         nice_head("Recover Account")
         mail = input("Registered email: ").strip()
+        if '@' not in mail or '.' not in mail:
+            print("Enter a valid email.")
+            wait_a_bit()
+            return
         db = sqlite3.connect("bank.db")
         c = db.cursor()
         c.execute("SELECT name, account_number, pin FROM accounts WHERE email=?", (mail,))
@@ -149,8 +158,8 @@ class Bank:
         c.execute("DELETE FROM transactions WHERE account_number=?", (acct,))
         c.execute("DELETE FROM beneficiaries WHERE owner_acc=?", (acct,))
         c.execute("DELETE FROM beneficiaries WHERE ben_acc_num=?", (acct,))
-        c.execute("DELETE FROM loans WHERE account_number=?", (acct,))
-        c.execute("DELETE FROM helpdesk WHERE account_number=?", (acct,))
+        # c.execute("DELETE FROM loans WHERE account_number=?", (acct,))
+        # c.execute("DELETE FROM helpdesk WHERE account_number=?", (acct,))
         db.commit()
         db.close()
 
@@ -169,7 +178,7 @@ class Bank:
             print("2. List users")
             print("3. Force delete user")
             print("4. Logout")
-            ch = input("\nChoos: ").strip()
+            ch = input("\nChoose: ").strip()
             if ch == '1':
                 self.admin_loans()
             elif ch == '2':
@@ -437,6 +446,7 @@ class Bank:
             print("Target acct not found.")
             wait_a_bit()
             return
+
         print(f"Sending to: {rr[0]}")
         try:
             amount = float(input("Amount: ").strip())
