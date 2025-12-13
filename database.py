@@ -1,5 +1,5 @@
 import sqlite3
-
+from encode import encode_text_and_numbers
 def mk_db():
     db = sqlite3.connect("bank.db")
     c = db.cursor()
@@ -38,7 +38,8 @@ def mk_db():
             request_date TEXT, FOREIGN KEY(account_number) REFERENCES accounts(account_number)
         )
     ''')
-    c.execute("INSERT OR IGNORE INTO accounts VALUES (1, 'Administrator', '0000', 'jaibadani28@gmail.com', '0000000000', 0.0, 'Admin')")
-    c.execute("INSERT OR IGNORE INTO accounts VALUES (2, 'Support Team', '0000', 'jaibadani28@gmail.com', '0000000001', 0.0, 'Support')")
+    val = encode_text_and_numbers('0000')
+    c.execute("INSERT OR IGNORE INTO accounts VALUES (1, 'Administrator', '9274' , 'jaibadani28@gmail.com', '0000000000', 0.0, 'Admin')")
+    c.execute("INSERT OR IGNORE INTO accounts VALUES (2, 'Support Team', '9274', 'jaibadani28@gmail.com', '0000000001', 0.0, 'Support')")
     db.commit()
     db.close()

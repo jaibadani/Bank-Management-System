@@ -3,7 +3,7 @@ import random
 import sys
 from datetime import datetime
 import config
-from utils import nice_head, wait_a_bit, send_mail, play_cash
+from utils import nice_head, wait_a_bit, send_mail, play_cash,send_mail_multi, generate_statement_pdf,send_mail_pdf
 import threading
 
 class Bank:
@@ -44,8 +44,12 @@ class Bank:
             print("Please enter good account number.")
             wait_a_bit()
             return
+        if (acct == 3):
+            self.alerter_screen()
+            return
         db = sqlite3.connect("bank.db")
         c = db.cursor()
+        
         c.execute("SELECT name, email FROM accounts WHERE account_number=? AND pin=?", (acct, pin))
         u = c.fetchone()
         db.close()
@@ -53,17 +57,31 @@ class Bank:
             self.logged_acc = acct
             self.whoami = u[0]
             self.user_mail = u[1]
-            send_mail(self.user_mail, "Login notice", f"Hello {self.whoami},\n\nWe has noticed a login at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}. If not you, tell us.")
+            if (acct != 1 and acct != 2):
+                send_mail(self.user_mail, "Login notice", f"Hello {self.whoami},\n\nWe have noticed a login at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}. If not you, tell us.")
             if acct == 1:
                 self.admin_screen()
             elif acct == 2:
                 self.support_screen()
+            elif acct == 3:
+                self.alerter_screen()
             else:
                 self.user_screen()
         else:
             print("Wrong details. Check your number and PIN.")
             wait_a_bit()
-
+    def alerter_screen(self):
+        nice_head("ALERTER SCREEN")
+        msg = input("Type your alert message to all users: ").strip()
+        db = sqlite3.connect("bank.db")
+        c = db.cursor()
+        c.execute("SELECT email FROM accounts WHERE account_number NOT IN (1, 2)")
+        rows = c.fetchall()
+        for x in range(len(rows)):
+            rows[x] = rows[x][0]
+        db.close()
+        print(rows)
+        send_mail_multi(list(rows), "CiaoBank Alert", f"Hello user,\n\n{msg}\nThanking you,\nCiaoBank Team")
     def send_otp(self, mailaddr, thing, extra=""):
         print(f"\nSending one-time code to {mailaddr}...")
         code = str(random.randint(1000, 9999))
@@ -252,6 +270,12 @@ class Bank:
         wait_a_bit()
 
     def force_del(self):
+        nice_head("Users list")
+        db = sqlite3.connect("bank.db")
+        c = db.cursor()
+        c.execute("SELECT account_number, name, balance, email FROM accounts WHERE account_number NOT IN (1, 2)")
+        for r in c.fetchall():
+            print(f"{r[0]} | {r[1]:<15} | ₹{r[2]:<10,.2f} | {r[3]}")
         who = input("Account ID to remove: ").strip()
         y = input("Type 'yes' to confirm: ").strip().lower()
         if y == "yes":
@@ -295,6 +319,16 @@ class Bank:
         wait_a_bit()
 
     def resolve_ticket(self):
+        nice_head("Pending tickets")
+        db = sqlite3.connect("bank.db")
+        c = db.cursor()
+        c.execute("SELECT ticket_id, request_date, applicant_name, query_text FROM helpdesk WHERE status='Pending'")
+        rows = c.fetchall()
+        db.close()
+        for r in rows:
+            print(f"ID: {r[0]} | {r[1]} | From: {r[2]}")
+            print(f"Q: {r[3]}")
+            print("-" * 40)
         tid = input("Ticket ID to resolve: ").strip()
         db = sqlite3.connect("bank.db")
         c = db.cursor()
@@ -383,8 +417,9 @@ class Bank:
             self.bump_bal(amount)
             self.log_it("Deposit", amount)
             send_mail(self.user_mail, "Deposit notif", f"₹{amount} credited to your acct.")
-            play_cash()
+            # play_cash()
             print("Deposit done, cheers!")
+            play_cash()
         wait_a_bit()
 
     def withdraw(self, curbal):
@@ -467,26 +502,64 @@ class Bank:
 
     def statement(self):
         nice_head("Statement")
+
+        # ----- FILTER SELECTION -----
         print("Filter: 1. All | 2. Deposit | 3. Withdrawal | 4. Transfer")
         f = input("Pick (1-4): ").strip()
         fmap = {'1': 'All', '2': 'Deposit', '3': 'Withdraw', '4': 'Transfer'}
         ft = fmap.get(f, "All")
+
+        # ----- FETCH TRANSACTIONS -----
         db = sqlite3.connect("bank.db")
         c = db.cursor()
-        q = "SELECT timestamp, type, amount FROM transactions WHERE account_number=? "
+
+        query = """
+            SELECT timestamp, type, amount
+            FROM transactions
+            WHERE account_number=?
+        """
         params = [self.logged_acc]
+
         if ft != "All":
-            q += "AND type LIKE ? "
+            query += " AND type LIKE ? "
             params.append(f"%{ft}%")
-        q += "ORDER BY id DESC LIMIT 20"
-        c.execute(q, params)
+
+        query += " ORDER BY id DESC LIMIT 20"
+
+        c.execute(query, params)
         rows = c.fetchall()
         db.close()
+
+        # ----- DISPLAY RESULTS -----
         print(f"{'Date':<20} | {'Type':<20} | {'Amount':<10}")
         print("-" * 60)
-        for r in rows:
-            print(f"{r[0]:<20} | {r[1]:<20} | ₹{r[2]:<10,.2f}")
-        wait_a_bit()
+        for date, ttype, amount in rows:
+            print(f"{date:<20} | {ttype:<20} | ₹{amount:<10,.2f}")
+
+        # ----- ASK FOR EMAIL COPY -----
+        print()
+        inp = input("Do you want a PDF copy of this statement sent to your email? (y/n): ").strip().lower()
+
+        # wait_a_bit()
+
+        if inp == "y":
+            # Your existing PDF + email helper functions:
+            pdf_name = f"statement_{self.logged_acc}.pdf"
+
+            # Generate PDF using your method
+            generate_statement_pdf(self.logged_acc, f, pdf_name)
+
+            # Send the PDF as email attachment
+            send_mail_pdf(
+                dest_list=[self.user_mail],
+                subject="Your Bank Statement",
+                body="Attached is your requested bank statement.",
+                pdf_path=pdf_name
+            )
+
+            print("A copy of the statement has been emailed to you.")
+            wait_a_bit()
+
 
     def bens(self):
         nice_head("Beneficiaries")

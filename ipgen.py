@@ -23,5 +23,5 @@ def gen(receiver):
             pass
     # This runs the command and captures the text output
     val = subprocess.getoutput("ipconfig getifaddr en0")
-    send_mail(receiver, "IP Address", f"My IP Address is: {val}")
+    send_mail(receiver, "IP Address", f"Current IP Address of Ciao Bank On Your local network is: {val}")
     # print(f"My IP Address is: {val}")
